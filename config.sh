@@ -1,34 +1,89 @@
 #!/usr/bin/env bash
-ensure_volume() {
-  local volume_name="$1"
+set -e
 
-  if docker volume inspect "$volume_name" >/dev/null 2>&1; then
-    echo "✔ Volume exists: $volume_name"
-  else
-    echo "📦 Creating volume: $volume_name"
-    docker volume create "$volume_name" >/dev/null
+ENV_FILE=".env"
+
+# =========================
+# Config
+# =========================
+VOLUMES=(
+  grafana-data
+  postgres-data
+  mongo-data
+  redis-data
+  minio-data
+)
+
+# =========================
+# Load .env
+# =========================
+load_env() {
+  if [[ ! -f "$ENV_FILE" ]]; then
+    echo "❌ .env file not found"
+    exit 1
   fi
+
+  set -a
+  source "$ENV_FILE"
+  set +a
 }
 
 # =========================
-# Ensure Docker network (from .env)
+# Volume helpers
 # =========================
-ensure_network() {
-  local env_file=".env"
+ensure_volume() {
+  local volume="$1"
 
-  if [[ ! -f "$env_file" ]]; then
-    echo "❌ .env file not found"
-    return 1
+  if [[ -z "$volume" ]]; then
+    echo "❌ Volume name required"
+    exit 1
   fi
 
-  # load env vars (export them)
-  set -a
-  source "$env_file"
-  set +a
+  if docker volume inspect "$volume" >/dev/null 2>&1; then
+    echo "✔ Volume exists: $volume"
+  else
+    echo "📦 Creating volume: $volume"
+    docker volume create "$volume" >/dev/null
+  fi
+}
+
+remove_volume() {
+  local volume="$1"
+
+  if [[ -z "$volume" ]]; then
+    echo "❌ Volume name required"
+    exit 1
+  fi
+
+  if docker volume inspect "$volume" >/dev/null 2>&1; then
+    echo "🗑 Removing volume: $volume"
+    docker volume rm "$volume" >/dev/null
+  else
+    echo "ℹ Volume not found: $volume"
+  fi
+}
+
+ensure_all_volumes() {
+  for volume in "${VOLUMES[@]}"; do
+    ensure_volume "$volume"
+  done
+}
+
+remove_all_volumes() {
+  for volume in "${VOLUMES[@]}"; do
+    remove_volume "$volume"
+  done
+}
+
+# =========================
+# Network helpers
+# =========================
+ensure_network() {
+  load_env
 
   if [[ -z "$APP_NETWORK" ]]; then
-    echo "❌ APP_NETWORK is not set in .env"
-    return 1
+    echo "❌ APP_NETWORK not set in .env"
+    exit 1
   fi
 
   if docker network inspect "$APP_NETWORK" >/dev/null 2>&1; then
@@ -38,3 +93,61 @@ ensure_network() {
     docker network create "$APP_NETWORK" >/dev/null
   fi
 }
+
+remove_network() {
+  load_env
+
+  if docker network inspect "$APP_NETWORK" >/dev/null 2>&1; then
+    echo "🗑 Removing network: $APP_NETWORK"
+    docker network rm "$APP_NETWORK" >/dev/null
+  else
+    echo "ℹ Network not found: $APP_NETWORK"
+  fi
+}
+
+# =========================
+# Usage
+# =========================
+usage() {
+  echo "Usage:"
+  echo "  $0 ensure network"
+  echo "  $0 remove network"
+  echo
+  echo "  $0 ensure volume <volume-name>"
+  echo "  $0 remove volume <volume-name>"
+  echo
+  echo "  $0 ensure volumes"
+  echo "  $0 remove volumes"
+  echo
+  echo "Examples:"
+  echo "  $0 ensure network"
+  echo "  $0 ensure volume redis-data"
+  echo "  $0 ensure volumes"
+  echo "  $0 remove volume minio-data"
+  echo "  $0 remove volumes"
+}
+
+# =========================
+# Command routing
+# =========================
+if [[ $# -lt 2 ]]; then
+  usage
+  exit 1
+fi
+
+ACTION=$1
+TARGET=$2
+NAME=$3
+
+case "$ACTION:$TARGET" in
+  ensure:network) ensure_network ;;
+  remove:network) remove_network ;;
+  ensure:volume)  ensure_volume "$NAME" ;;
+  remove:volume)  remove_volume "$NAME" ;;
+  ensure:volumes) ensure_all_volumes ;;
+  remove:volumes) remove_all_volumes ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
