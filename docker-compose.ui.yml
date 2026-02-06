@@ -36,6 +36,17 @@ services:
       - app-net
     restart: unless-stopped
 
+  redisinsight:
+    image: redis/redisinsight:latest
+    ports:
+      - "${REDIS_INSIGHT_PORT}:5540"
+    environment:
+      RI_HOST: ${RI_HOST}
+      RI_ENCRYPTION_KEY: ${RI_ENCRYPTION_KEY}
+    networks:
+      - app-net
+    restart: unless-stopped
+
 volumes:
   grafana-data:
     external: true

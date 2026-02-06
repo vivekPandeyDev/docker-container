@@ -6,4 +6,6 @@ source ./config.sh
 
 ensure_network
 ensure_volume grafana-data
-ensure_volume tempo-data
+ensure_volume postgres-data
+ensure_volume mongo-data
+ensure_volume redis-data
