@@ -12,6 +12,7 @@ VOLUMES=(
   mongo-data
   redis-data
   minio-data
+  kafka-data
 )
 
 # =========================
