@@ -56,6 +56,9 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: single-broker
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    networks:
+      - app-net
+    restart: unless-stopped
 
 volumes:
   grafana-data:
