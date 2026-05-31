@@ -45,6 +45,9 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_NOTIFY_KAFKA_ENABLE_PRIMARY: "on"
+      MINIO_NOTIFY_KAFKA_BROKERS_PRIMARY: "kafka:9092"
+      MINIO_NOTIFY_KAFKA_TOPIC_PRIMARY: "media.object.created"
     ports:
       - "${MINIO_API_PORT}:9000"   # MinIO API
       - "${MINIO_CONSOLE_PORT}:9001"   # MinIO Console UI
