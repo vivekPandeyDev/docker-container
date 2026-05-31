@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:17-alpine
+    container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -14,6 +15,7 @@ services:
     restart: unless-stopped
 
   mongo:
+    container_name: mongo
     image: mongo:8.2-noble
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
@@ -27,16 +29,17 @@ services:
     restart: unless-stopped
   
   redis:
-      image: redis:7.2.4
-      restart: unless-stopped
-      ports:
-        - "${REDIS_PORT}:6379"
-      environment:
-        REDIS_PASSWORD: ${REDIS_PASSWORD}
-      networks:
-        - app-net
-      volumes:
-        - redis-data:/data   
+    container_name: redis
+    image: redis:7.2.4
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT}:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks:
+      - app-net
+    volumes:
+      - redis-data:/data   
 
   minio:
     image: minio/minio:latest
